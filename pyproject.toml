@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rollout-fabric"
+version = "0.1.0"
+description = "Asynchronous rollout generation for RL post-training: bounded staleness, crash recovery, sandboxed code rewards"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "AbdelKarim ELJANDOUBI" }]
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+ray = ["ray>=2.40"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11"]
+
+[project.scripts]
+rollout-fabric = "rollout_fabric.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rollout_fabric"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["ray: needs ray, slower"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["rollout_fabric"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["ray", "ray.*"]
+ignore_missing_imports = true
