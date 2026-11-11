@@ -74,6 +74,7 @@ class _Run:
         self.t0 = time.monotonic()
         self.last_progress = self.t0
         self._ids = itertools.count()
+        self._crashes: Counter[int] = Counter()  # per sample id, across its attempts
 
     def new_spec(self) -> Spec:
         i = next(self._ids)
@@ -91,7 +92,8 @@ class _Run:
                 rollouts.append(pool.result(handle))
             except WorkerCrashed as crash:
                 self.stats.crashes += 1
-                if spec.attempt + 1 >= self.cfg.max_attempts:
+                self._crashes[spec.sample_id] += 1
+                if self._crashes[spec.sample_id] >= self.cfg.max_attempts:
                     raise RuntimeError(
                         f"sample {spec.sample_id} killed its worker {self.cfg.max_attempts} times"
                     ) from crash
