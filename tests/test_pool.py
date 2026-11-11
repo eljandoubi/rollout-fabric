@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import time
 from dataclasses import replace
 
@@ -5,7 +7,7 @@ import numpy as np
 import pytest
 
 from rollout_fabric.config import Config
-from rollout_fabric.pool import ThreadPool, make_pool
+from rollout_fabric.pool import ThreadPool, make_pool, runtime
 from rollout_fabric.tasks import N_CHOICES, TASKS
 from rollout_fabric.worker import Spec, WorkerCrashed
 
@@ -131,3 +133,32 @@ def test_the_factory_builds_a_thread_pool():
 def test_the_factory_rejects_an_unknown_backend():
     with pytest.raises(ValueError, match="unknown backend 'gpu'"):
         make_pool("gpu", FAST)
+
+
+# The runtime that starts Ray once for several runs.
+
+
+def test_the_thread_runtime_needs_nothing():
+    with runtime("thread"):
+        pass
+
+
+@pytest.mark.ray
+def test_the_ray_runtime_leaves_a_ray_that_was_already_running(ray_session):
+    with runtime("ray"):
+        assert ray_session.is_initialized()
+    assert ray_session.is_initialized()
+
+
+@pytest.mark.ray
+def test_the_ray_runtime_stops_the_ray_it_started():
+    pytest.importorskip("ray")
+    code = (
+        "import ray\n"
+        "from rollout_fabric.pool import runtime\n"
+        "with runtime('ray'):\n"
+        "    inside = ray.is_initialized()\n"
+        "print(inside, ray.is_initialized())\n"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
+    assert out.stdout.strip().splitlines()[-1] == "True False", out.stderr[-500:]

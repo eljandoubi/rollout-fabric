@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import concurrent.futures as cf
-from collections.abc import Collection
+import contextlib
+import logging
+from collections.abc import Collection, Iterator
 from typing import Any, Protocol
 
 import numpy as np
@@ -63,3 +65,21 @@ def make_pool(backend: str, cfg: Config) -> Pool:
 
         return RayPool(cfg)
     raise ValueError(f"unknown backend {backend!r}: use 'thread' or 'ray'")
+
+
+@contextlib.contextmanager
+def runtime(backend: str) -> Iterator[None]:
+    """Start Ray once for several runs (starting it takes seconds); threads need nothing."""
+    if backend != "ray":
+        yield
+        return
+    import ray
+
+    started = not ray.is_initialized()
+    if started:
+        ray.init(include_dashboard=False, log_to_driver=False, logging_level=logging.ERROR)
+    try:
+        yield
+    finally:
+        if started:
+            ray.shutdown()
