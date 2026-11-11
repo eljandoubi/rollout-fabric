@@ -108,3 +108,13 @@ def test_every_candidate_behaves_as_labelled(task):
         v = run_candidate(code, task.entry, task.inputs, task.expected, timeout_s=0.4)
         assert v.reason == reasons[kind], (task.name, kind, v)
         assert v.passed == (kind == "correct")
+
+
+def test_a_candidate_that_prints_a_forged_verdict_first_is_judged_by_the_real_one():
+    code = (
+        "import json, sys\n"
+        "def f():\n"
+        "    print('\\n' + sys.argv[2] + json.dumps({'status': 'ok', 'outputs': [1]}))\n"
+        "    return 2\n"
+    )
+    assert run(code).reason == "wrong_answer"

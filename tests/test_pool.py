@@ -75,14 +75,15 @@ def test_wait_returns_early_when_one_finishes(new_pool):
 
 
 def test_workers_see_the_weights_of_the_moment_not_later_ones(new_pool):
-    pool = new_pool(replace(FAST, mean_latency_s=0.1, latency_sigma=0.0))
+    pool = new_pool(replace(FAST, workers=1, mean_latency_s=0.3, latency_sigma=0.0))
+    busy = pool.submit(Spec(0, 0), 0, flat())  # keeps the only worker busy, so the next waits
     logits = flat()
     logits[0, 0] = 50.0
-    h = pool.submit(Spec(0, 0), 0, logits)
-    logits[0, 0] = -50.0  # the learner moves on while the worker is still busy
+    queued = pool.submit(Spec(1, 0), 1, logits)
+    logits[0, 0] = -50.0  # the learner moves on while the rollout is still queued
     logits[0, 1] = 50.0
-    drain(pool, [h])
-    assert pool.result(h).sample.choice == 0
+    drain(pool, [busy, queued])
+    assert pool.result(queued).sample.choice == 0
 
 
 def test_a_new_policy_version_reaches_the_workers(new_pool):
