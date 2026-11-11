@@ -118,3 +118,15 @@ def test_a_candidate_that_prints_a_forged_verdict_first_is_judged_by_the_real_on
         "    return 2\n"
     )
     assert run(code).reason == "wrong_answer"
+
+
+@pytest.mark.parametrize("tail", ["{broken", ""])
+def test_a_broken_verdict_line_is_no_result(tail):
+    code = (
+        "import os, sys\n"
+        "def f():\n"
+        f"    sys.stdout.write('\\n' + sys.argv[2] + {tail!r})\n"
+        "    sys.stdout.flush()\n"
+        "    os._exit(0)\n"
+    )
+    assert run(code).reason == "no_result"
