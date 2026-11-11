@@ -18,6 +18,7 @@ class Config:
     lr: float = 3.0  # large because each task sees only a few samples per step
     seed: int = 0
     crash_prob: float = 0.0  # chance that a worker dies while handling one rollout
+    max_attempts: int = 10  # a rollout that kills its worker this many times stops the run
     sandbox: bool = True  # run the candidate in the sandbox, or trust its label
     sandbox_timeout_s: float = 0.5
     task_timeout_s: float = 60.0  # give up when nothing finishes for this long

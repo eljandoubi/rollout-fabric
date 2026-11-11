@@ -89,8 +89,12 @@ class _Run:
             spec = pending.pop(handle)
             try:
                 rollouts.append(pool.result(handle))
-            except WorkerCrashed:
+            except WorkerCrashed as crash:
                 self.stats.crashes += 1
+                if spec.attempt + 1 >= self.cfg.max_attempts:
+                    raise RuntimeError(
+                        f"sample {spec.sample_id} killed its worker {self.cfg.max_attempts} times"
+                    ) from crash
                 again = replace(spec, attempt=spec.attempt + 1)
                 pending[self.submit(pool, again)] = again
         if done:

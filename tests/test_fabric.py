@@ -11,7 +11,13 @@ from rollout_fabric.pool import ThreadPool
 from rollout_fabric.worker import Spec, WorkerCrashed, generate
 
 QUIET = Config(
-    workers=4, batch_size=4, steps=10, mean_latency_s=0.0, train_step_s=0.0, sandbox=False
+    workers=4,
+    batch_size=4,
+    steps=10,
+    mean_latency_s=0.0,
+    train_step_s=0.0,
+    sandbox=False,
+    task_timeout_s=10.0,
 )
 
 
@@ -90,6 +96,15 @@ def test_a_crashed_rollout_is_asked_again_and_nothing_is_lost(fn):
     assert Spec(3, 3, attempt=2) in pool.submitted  # the third try is the one that worked
     assert s.consumed == QUIET.steps * QUIET.batch_size
     assert len(set(s.sample_ids)) == len(s.sample_ids)
+
+
+@MODES
+def test_a_rollout_that_always_kills_its_worker_stops_the_run(fn):
+    pool = ScriptedPool(QUIET, crash={(5, a) for a in range(50)})
+    with pytest.raises(RuntimeError, match="sample 5 killed its worker 10 times"):
+        fn(QUIET, pool)
+    assert Spec(5, 5, attempt=9) in pool.submitted
+    assert Spec(5, 5, attempt=10) not in pool.submitted
 
 
 @MODES
@@ -242,6 +257,11 @@ def test_the_learner_waits_less_in_async():
 
 
 # --- the numbers in RunStats -------------------------------------------------------------------
+
+
+def test_reaching_the_target_exactly_counts():
+    s = RunStats("x", step_rewards=[0.5, 0.5, 0.5], step_end_s=[1, 2, 3])
+    assert s.time_to_reward(0.5) == 3
 
 
 def test_time_to_reward_is_the_end_of_the_first_window_that_reaches_the_target():
