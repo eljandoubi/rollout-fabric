@@ -114,7 +114,7 @@ from rollout_fabric.fabric import run_async
 from rollout_fabric.pool import make_pool
 
 cfg = Config(workers=8, max_staleness=2)
-pool = make_pool("thread", cfg)          # or "ray"
+pool = make_pool("thread", cfg)  # or "ray"
 try:
     stats = run_async(cfg, pool)
 finally:
