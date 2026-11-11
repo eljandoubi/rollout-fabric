@@ -29,6 +29,8 @@ addopts = "-ra"
 
 [tool.coverage.run]
 source = ["rollout_fabric"]
+# the Ray backend has its own job in CI (pytest -m ray)
+omit = ["*/ray_pool.py"]
 
 [tool.ruff]
 line-length = 100

@@ -60,7 +60,7 @@ class ThreadPool:
 def make_pool(backend: str, cfg: Config) -> Pool:
     if backend == "thread":
         return ThreadPool(cfg)
-    if backend == "ray":
+    if backend == "ray":  # pragma: no cover - needs ray, exercised by the ray job
         from rollout_fabric.ray_pool import RayPool  # ray is an optional dependency
 
         return RayPool(cfg)
@@ -68,11 +68,7 @@ def make_pool(backend: str, cfg: Config) -> Pool:
 
 
 @contextlib.contextmanager
-def runtime(backend: str) -> Iterator[None]:
-    """Start Ray once for several runs (starting it takes seconds); threads need nothing."""
-    if backend != "ray":
-        yield
-        return
+def _ray_runtime() -> Iterator[None]:  # pragma: no cover - needs ray, exercised by the ray job
     import ray
 
     started = not ray.is_initialized()
@@ -83,3 +79,8 @@ def runtime(backend: str) -> Iterator[None]:
     finally:
         if started:
             ray.shutdown()
+
+
+def runtime(backend: str) -> contextlib.AbstractContextManager[None]:
+    """Start Ray once for several runs (starting it takes seconds); threads need nothing."""
+    return _ray_runtime() if backend == "ray" else contextlib.nullcontext()
