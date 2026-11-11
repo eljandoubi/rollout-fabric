@@ -53,3 +53,13 @@ class ThreadPool:
 
     def close(self) -> None:
         self._pool.shutdown(wait=True, cancel_futures=True)
+
+
+def make_pool(backend: str, cfg: Config) -> Pool:
+    if backend == "thread":
+        return ThreadPool(cfg)
+    if backend == "ray":
+        from rollout_fabric.ray_pool import RayPool  # ray is an optional dependency
+
+        return RayPool(cfg)
+    raise ValueError(f"unknown backend {backend!r}: use 'thread' or 'ray'")
